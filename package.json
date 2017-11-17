@@ -13,9 +13,7 @@
   },
   "repository": "",
   "scripts": {
-    "build": "ember build",
-    "start": "ember serve",
-    "test": "ember try:each"
+    "test": "qunit tests/**/*.js"
   },
   "dependencies": {
     "broccoli-persistent-filter": "^1.4.3",
