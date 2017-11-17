@@ -1,17 +1,18 @@
 {
   "name": "ember-cli-cjs-transform",
   "version": "0.0.0",
-  "description": "The default blueprint for ember-cli addons.",
+  "description": "Add a CJS tranform for use with ember-cli's `app.import` API.",
   "keywords": [
     "ember-addon"
   ],
   "license": "MIT",
-  "author": "",
+  "author": "Robert Jackson <me@rwjblue.com>",
+  "main": "src/index.js",
   "directories": {
     "doc": "doc",
     "test": "tests"
   },
-  "repository": "",
+  "repository": "git@github.com:rwjblue/ember-cli-cjs-transform.git",
   "scripts": {
     "test": "qunit tests/**/*.js"
   },
