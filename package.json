@@ -1,6 +1,6 @@
 {
   "name": "ember-cli-cjs-transform",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Add a CJS tranform for use with ember-cli's `app.import` API.",
   "keywords": [
     "ember-addon"
