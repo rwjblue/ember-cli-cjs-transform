@@ -20,8 +20,8 @@ class CJSTransform extends Filter {
       annotation: 'CJS Transform',
     });
 
-    this.extensions = ['.js'];
-    this.targetExtension = ['.js'];
+    this.extensions = ['js'];
+    this.targetExtension = 'js';
     this.options = options;
   }
 
