@@ -1,40 +1,30 @@
 module.exports = {
   root: true,
   parserOptions: {
-    ecmaVersion: 2017,
-    sourceType: 'module',
+    ecmaVersion: 2015,
   },
-  extends: 'eslint:recommended',
+  plugins: ['prettier', 'node'],
+  extends: ['eslint:recommended', 'prettier', 'plugin:node/recommended'],
   env: {
-    browser: true,
+    node: true,
   },
   rules: {
+    'prettier/prettier': ['error', {
+      singleQuote: true,
+      trailingComma: 'es5',
+      printWidth: 100,
+    }],
   },
-  overrides: [
-    // node files
-    {
-      files: [
-        './ember-cli-build.js',
-        './testem.js',
-        './index.js',
-        'config/**/*.js',
-      ],
-      parserOptions: {
-        sourceType: 'script',
-        ecmaVersion: 2015,
-      },
-      env: {
-        browser: false,
-        node: true,
-      }
-    },
 
-    // test files
+  overrides: [
     {
       files: ['tests/**/*.js'],
-        env: {
-          embertest: true,
-        }
-    },
+      globals: {
+        'QUnit': false,
+      },
+      env: {
+        qunit: true,
+      }
+    }
   ]
 };
