@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "broccoli-test-helper": "^1.2.0",
+    "co": "^4.6.0",
     "eslint-config-prettier": "^2.7.0",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-prettier": "^2.3.1",
