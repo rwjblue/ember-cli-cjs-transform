@@ -19,9 +19,6 @@ module.exports = {
   overrides: [
     {
       files: ['tests/**/*.js'],
-      globals: {
-        'QUnit': false,
-      },
       env: {
         qunit: true,
       }
