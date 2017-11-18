@@ -15,6 +15,7 @@ describe('ember-cli-cjs-transform', function() {
     function wrapAndExecute(name, input) {
       let wrappedContents = CJSTransform.wrap(name, input);
       let result = new Function(`
+      'use strict';
       let result = {};
       function define(moduleName, deps, callback) {
         result.name = moduleName;
