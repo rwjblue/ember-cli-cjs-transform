@@ -13,7 +13,7 @@ ember install ember-cli-cjs-transform
 
 In your `ember-cli-build.js` file just like the `amd` transform!
 
-For exmaple, add the following to import `some-name`'s `index.js` into your build:
+For example, add the following to import `some-name`'s `index.js` into your build:
 
 ```js
 app.import('node_modules/some-name/index.js', {
