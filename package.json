@@ -17,6 +17,7 @@
     "test": "qunit tests/**/*.js"
   },
   "dependencies": {
+    "broccoli-debug": "^0.6.4",
     "broccoli-persistent-filter": "^1.4.3",
     "ember-cli-babel": "^6.6.0",
     "rollup": "^0.57.1",

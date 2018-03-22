@@ -1,16 +1,25 @@
 'use strict';
 
-const CJSTransform = require('./cjs-transform');
-
 module.exports = {
   name: 'ember-cli-cjs-transform',
 
   importTransforms() {
+    const BroccoliDebug = require('broccoli-debug');
+    const CJSTransform = require('./cjs-transform');
+
+    let project = this.project;
+    let debugTree = BroccoliDebug.buildDebugCallback('ember-cli-cjs-transform');
+
     return {
       cjs: {
         transform(tree, options) {
-          return new CJSTransform(tree, options);
+          let input = debugTree(tree, 'input');
+
+          let processed = new CJSTransform(input, project.root, options);
+
+          return debugTree(processed, 'output');
         },
+
         processOptions(assetPath, entry, options) {
           if (!entry.as) {
             throw new Error(
