@@ -54,6 +54,7 @@ class CJSTransform extends Plugin {
       file: path.posix.join(this.outputPath, relativePath),
       format: 'amd',
       amd: { id: moduleName },
+      exports: 'named',
     };
 
     return rollup.rollup(inputOptions).then(bundle => bundle.write(outputOptions));
