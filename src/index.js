@@ -23,9 +23,7 @@ module.exports = {
         processOptions(assetPath, entry, options) {
           if (!entry.as) {
             throw new Error(
-              `while importing ${
-                assetPath
-              }: cjs transformation requires an \`as\` argument that specifies the desired module name`
+              `while importing ${assetPath}: cjs transformation requires an \`as\` argument that specifies the desired module name`
             );
           }
 
@@ -35,9 +33,7 @@ module.exports = {
             options[assetPath].as !== entry.as
           ) {
             throw new Error(
-              `Highlander error while importing ${
-                assetPath
-              }. You may not import an AMD transformed asset at different module names.`
+              `Highlander error while importing ${assetPath}. You may not import an AMD transformed asset at different module names.`
             );
           }
 
