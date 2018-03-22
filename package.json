@@ -18,7 +18,10 @@
   },
   "dependencies": {
     "broccoli-persistent-filter": "^1.4.3",
-    "ember-cli-babel": "^6.6.0"
+    "ember-cli-babel": "^6.6.0",
+    "rollup": "^0.57.1",
+    "rollup-plugin-commonjs": "^9.1.0",
+    "rollup-plugin-node-resolve": "^3.3.0"
   },
   "devDependencies": {
     "broccoli-test-helper": "^1.2.0",
