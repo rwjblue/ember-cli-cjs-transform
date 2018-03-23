@@ -12,10 +12,13 @@ const describe = QUnit.module;
 const it = QUnit.test;
 
 describe('ember-cli-cjs-transform', function() {
-  function evaluateModules(contents) {
+  function evaluateModules(filePath) {
+    let contents = fs.readFileSync(filePath, { encoding: 'utf-8' });
+
     return new Function(`
       'use strict';
-      let result = {};
+      let exports = {};
+      let result = { exports };
       function define(moduleName, deps, callback) {
         result.name = moduleName;
 
@@ -26,6 +29,8 @@ describe('ember-cli-cjs-transform', function() {
           result.deps = deps;
           result.callback = callback;
         }
+
+        callback(exports);
       }
 
       ${contents};
@@ -33,6 +38,7 @@ describe('ember-cli-cjs-transform', function() {
       return result;
     `)();
   }
+
   describe('broccoli tree', function(hooks) {
     let input, projectRoot, output;
 
@@ -72,15 +78,29 @@ describe('ember-cli-cjs-transform', function() {
 
         yield output.build();
 
-        let emittedContents = fs.readFileSync(output.path('node_modules/foo/index.js'), {
-          encoding: 'utf-8',
-        });
-        let results = evaluateModules(emittedContents);
+        let results = evaluateModules(output.path('node_modules/foo/index.js'));
         assert.equal(results.name, 'bar');
+        assert.deepEqual(results.exports, { default: 'derp' });
 
-        let exports = {};
-        results.callback(exports);
-        assert.deepEqual(exports, { default: 'derp' });
+        // UPDATE
+        commonContents = {
+          node_modules: {
+            foo: {
+              'index.js': 'module.exports = "lol should not update";',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        yield output.build();
+
+        assert.deepEqual(output.changes(), {});
+
+        // NOOP
+        yield output.build();
+
+        assert.deepEqual(output.changes(), {});
       })
     );
 
@@ -114,15 +134,10 @@ describe('ember-cli-cjs-transform', function() {
 
         yield output.build();
 
-        let emittedContents = fs.readFileSync(output.path('node_modules/foo/index.js'), {
-          encoding: 'utf-8',
-        });
-        let results = evaluateModules(emittedContents);
+        // INITIAL
+        let results = evaluateModules(output.path('node_modules/foo/index.js'));
         assert.equal(results.name, 'bar');
-
-        let exports = {};
-        results.callback(exports);
-        assert.deepEqual(exports, {
+        assert.deepEqual(results.exports, {
           default: {
             bar: 'from bar',
             foo: 'from foo',
@@ -130,6 +145,26 @@ describe('ember-cli-cjs-transform', function() {
           bar: 'from bar',
           foo: 'from foo',
         });
+
+        // UPDATE
+        commonContents = {
+          node_modules: {
+            foo: {
+              'index.js': 'module.exports = "haha you screwed";',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        yield output.build();
+
+        assert.deepEqual(output.changes(), {});
+
+        // NOOP
+        yield output.build();
+
+        assert.deepEqual(output.changes(), {});
       })
     );
   });
