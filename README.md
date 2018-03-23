@@ -23,11 +23,26 @@ app.import('node_modules/some-name/index.js', {
 });
 ```
 
-When the file is imported it will have access to `require`, but unlike other
-solutions (e.g. `browserify`, `rollup`, etc) no attempt is made to ensure all
-files that are going to be required will be present in the final output. This
-means that you have to manually `app.import` each of the files that will be
-required at runtime.
+At build time we automatically follow all dependencies (e.g. internal `require`
+calls) in the source file, and includes their contents in the final build
+output.
+
+This means that even for reasonably complicated things, we can `app.import` the
+"entry point" files and everything "just" works.
+
+Examples (used while testing functionality):
+
+Bringing in `showdown` and `showdown-highlight` for usage (without extra "shim" addon packages!):
+
+```js
+app.import('node_modules/showdown/dist/showdown.js', {
+  using: [{ transformation: 'cjs', as: 'showdown' }]
+});
+app.import('node_modules/showdown-highlight/lib/index.js', {
+  using: [{ transformation: 'cjs', as: 'showdown-highlight' }]
+});
+app.import('node_modules/highlight.js/styles/tomorrow-night.css');
+```
 
 ## Contributing
 
