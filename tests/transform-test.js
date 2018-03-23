@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const co = require('co');
 const BroccoliTestHelper = require('broccoli-test-helper');
 const createBuilder = BroccoliTestHelper.createBuilder;
@@ -11,86 +12,123 @@ const describe = QUnit.module;
 const it = QUnit.test;
 
 describe('ember-cli-cjs-transform', function() {
-  describe('cjs-wrapper', function() {
-    function wrapAndExecute(name, input) {
-      let wrappedContents = CJSTransform.wrap(name, input);
-      let result = new Function(`
+  function evaluateModules(contents) {
+    return new Function(`
       'use strict';
       let result = {};
       function define(moduleName, deps, callback) {
         result.name = moduleName;
-        result.deps = deps;
-        result.callback = callback;
+
+        if (callback === undefined) {
+          result.deps = [];
+          result.callback = deps;
+        } else {
+          result.deps = deps;
+          result.callback = callback;
+        }
       }
 
-      ${wrappedContents};
+      ${contents};
 
       return result;
     `)();
-
-      result.output = wrappedContents;
-
-      return result;
-    }
-
-    it('emits an AMD module', function(assert) {
-      let result = wrapAndExecute('foo', `module.exports = "adsf";`);
-
-      assert.equal(result.name, 'foo', 'name matches');
-      assert.deepEqual(result.deps, ['require'], 'deps match');
-    });
-
-    it('callback returns module.exports value', function(assert) {
-      let result = wrapAndExecute('foo', `module.exports = "adsf";`);
-
-      assert.equal(result.callback(), 'adsf', 'callback works');
-    });
-
-    it('can use require', function(assert) {
-      assert.expect(2);
-
-      let result = wrapAndExecute('foo', `module.exports = require('bar');`);
-
-      function require(module) {
-        assert.equal(module, 'bar', 'correct module was required');
-        return 'bar required';
-      }
-
-      assert.equal(result.callback(require), 'bar required', 'callback works');
-    });
-  });
-
+  }
   describe('broccoli tree', function(hooks) {
-    let input, output;
+    let input, projectRoot, output;
+
     hooks.beforeEach(
       co.wrap(function*() {
         input = yield createTempDir();
+        projectRoot = yield createTempDir();
       })
     );
 
     hooks.afterEach(function() {
-      return Promise.all([input && input.dispose(), output && output.dispose()]);
+      return Promise.all([
+        input && input.dispose(),
+        output && output.dispose(),
+        projectRoot && projectRoot.dispose(),
+      ]);
     });
 
     it(
-      'generally functions properly',
+      'basic functionality works',
       co.wrap(function*(assert) {
-        let fooContents = 'module.exports = "derp";';
+        let commonContents = {
+          node_modules: {
+            foo: {
+              'index.js': 'module.exports = "derp";',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
 
-        input.write({
-          'foo.js': fooContents,
-        });
-
-        let subject = new CJSTransform(input.path(), {
-          'foo.js': { as: 'bar' },
+        let subject = new CJSTransform(input.path(), projectRoot.path(), {
+          'node_modules/foo/index.js': { as: 'bar' },
         });
 
         output = createBuilder(subject);
 
         yield output.build();
 
-        assert.deepEqual(output.read(), {
-          'foo.js': CJSTransform.wrap('bar', fooContents),
+        let emittedContents = fs.readFileSync(output.path('node_modules/foo/index.js'), {
+          encoding: 'utf-8',
+        });
+        let results = evaluateModules(emittedContents);
+        assert.equal(results.name, 'bar');
+
+        let exports = {};
+        results.callback(exports);
+        assert.deepEqual(exports, { default: 'derp' });
+      })
+    );
+
+    it(
+      'can rollup CJS requires',
+      co.wrap(function*(assert) {
+        let commonContents = {
+          node_modules: {
+            foo: {
+              'index.js': 'module.exports = { bar: require("./bar"), foo: require("./foo") };',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        projectRoot.write({
+          node_modules: {
+            foo: {
+              'foo.js': 'module.exports = "from foo";',
+              'bar.js': 'module.exports = "from bar";',
+            },
+          },
+        });
+
+        let subject = new CJSTransform(input.path(), projectRoot.path(), {
+          'node_modules/foo/index.js': { as: 'bar' },
+        });
+
+        output = createBuilder(subject);
+
+        yield output.build();
+
+        let emittedContents = fs.readFileSync(output.path('node_modules/foo/index.js'), {
+          encoding: 'utf-8',
+        });
+        let results = evaluateModules(emittedContents);
+        assert.equal(results.name, 'bar');
+
+        let exports = {};
+        results.callback(exports);
+        assert.deepEqual(exports, {
+          default: {
+            bar: 'from bar',
+            foo: 'from foo',
+          },
+          bar: 'from bar',
+          foo: 'from foo',
         });
       })
     );
