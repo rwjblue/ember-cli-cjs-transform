@@ -63,6 +63,7 @@ describe('ember-cli-cjs-transform', function() {
         let commonContents = {
           node_modules: {
             foo: {
+              'package.json': '{ "name": "foo", "version": "1.0.0" }',
               'index.js': 'module.exports = "derp";',
             },
           },
@@ -120,6 +121,7 @@ describe('ember-cli-cjs-transform', function() {
         projectRoot.write({
           node_modules: {
             foo: {
+              'package.json': '{ "name": "foo", "version": "1.0.0" }',
               'foo.js': 'module.exports = "from foo";',
               'bar.js': 'module.exports = "from bar";',
             },
@@ -165,6 +167,86 @@ describe('ember-cli-cjs-transform', function() {
         yield output.build();
 
         assert.deepEqual(output.changes(), {});
+      })
+    );
+
+    it(
+      'invalidates cache when restarted and contents differ',
+      co.wrap(function*(assert) {
+        let commonContents = {
+          node_modules: {
+            foo: {
+              'package.json': '{ "name": "foo", "version": "1.0.0" }',
+              'index.js': 'module.exports = "derp";',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        let subject = new CJSTransform(input.path(), projectRoot.path(), {
+          'node_modules/foo/index.js': { as: 'bar' },
+        });
+
+        output = createBuilder(subject);
+
+        yield output.build();
+
+        let results = evaluateModules(output.path('node_modules/foo/index.js'));
+        assert.equal(results.name, 'bar');
+        assert.deepEqual(results.exports, { default: 'derp' });
+
+        // UPDATE
+        commonContents = {
+          node_modules: {
+            foo: {
+              'index.js': 'module.exports = "lol should not update";',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        yield output.build();
+
+        assert.deepEqual(output.changes(), {});
+
+        // NOOP
+        yield output.build();
+
+        assert.deepEqual(output.changes(), {});
+
+        // cleanup initial builder
+        yield output.dispose();
+
+        // write new contents
+        commonContents = {
+          node_modules: {
+            foo: {
+              'package.json': '{ "name": "foo", "version": "2.0.0" }',
+              'index.js': 'module.exports = "huzzah";',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        // reset the hash-for-dep cache; without this we do _not_ recalculate
+        // the hashes (hash-for-dep itself caches the hashes for the life of
+        // the process)
+        require('hash-for-dep')._resetCache();
+
+        // setup a new builder
+        subject = new CJSTransform(input.path(), projectRoot.path(), {
+          'node_modules/foo/index.js': { as: 'bar' },
+        });
+
+        output = createBuilder(subject);
+        yield output.build();
+
+        results = evaluateModules(output.path('node_modules/foo/index.js'));
+        assert.equal(results.name, 'bar');
+        assert.deepEqual(results.exports, { default: 'huzzah' });
       })
     );
   });
