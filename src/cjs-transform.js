@@ -1,7 +1,9 @@
 'use strict';
 
 const Plugin = require('broccoli-plugin');
+const fs = require('fs-extra');
 const path = require('path');
+const crypto = require('crypto');
 
 class CJSTransform extends Plugin {
   constructor(input, projectRoot, options) {
@@ -14,6 +16,7 @@ class CJSTransform extends Plugin {
     this.projectRoot = projectRoot;
     this.options = options;
     this.hasBuilt = false;
+    this.cacheKey = this.calculateCacheKey();
   }
 
   build() {
@@ -21,16 +24,66 @@ class CJSTransform extends Plugin {
       return;
     }
 
-    let promises = [];
+    return this.calculateCacheDirectory()
+      .then(cachePath => {
+        if (fs.existsSync(cachePath)) {
+          return;
+        }
+
+        fs.ensureDirSync(cachePath);
+
+        let promises = [];
+
+        for (let relativePath in this.options) {
+          const relativePathOptions = this.options[relativePath];
+
+          let promise = this.processFile(relativePath, relativePathOptions.as);
+          promises.push(promise);
+        }
+
+        return Promise.all(promises);
+      })
+      .then(() => {
+        fs.copySync(this.cachePath, this.outputPath);
+        this.hasBuilt = true;
+      });
+  }
+
+  calculateCacheDirectory() {
+    const username = require('username');
+    const tmpdir = require('os').tmpdir();
+
+    return username().then(username => {
+      let cachePath = path.join(tmpdir, username, 'cjs-transform', this.cacheKey);
+      this.cachePath = cachePath;
+
+      return cachePath;
+    });
+  }
+
+  calculateCacheKey() {
+    const hashForDep = require('hash-for-dep');
+    const pkgDir = require('pkg-dir');
+
+    let hashes = [
+      // ensure the list files and `as` options are part of cache key...
+      this.options,
+      // ensure this package is part of the cache key...
+      hashForDep(path.join(__dirname, '..')),
+    ];
 
     for (let relativePath in this.options) {
-      const relativePathOptions = this.options[relativePath];
+      let fullPath = path.join(this.projectRoot, relativePath);
+      let packageDir = pkgDir.sync(fullPath);
+      let hash = hashForDep(packageDir);
 
-      let promise = this.processFile(relativePath, relativePathOptions.as);
-      promises.push(promise);
+      hashes.push(hash);
     }
 
-    return Promise.all(promises).then(() => (this.hasBuilt = true));
+    return crypto
+      .createHash('md5')
+      .update(JSON.stringify(hashes), 'utf8')
+      .digest('hex');
   }
 
   processFile(relativePath, moduleName) {
@@ -51,7 +104,7 @@ class CJSTransform extends Plugin {
     };
 
     let outputOptions = {
-      file: path.posix.join(this.outputPath, relativePath),
+      file: path.posix.join(this.cachePath, relativePath),
       format: 'amd',
       amd: { id: moduleName },
       exports: 'named',
