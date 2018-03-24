@@ -5,6 +5,28 @@ const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
 
+function ensureCachePopulated(cacheKey, buildFunction) {
+  const username = require('username');
+  const tmpdir = require('os').tmpdir();
+
+  let cachePath;
+
+  return username()
+    .then(username => {
+      cachePath = path.join(tmpdir, username, cacheKey);
+
+      if (fs.existsSync(cachePath)) {
+        // cache already exists, do nothing...
+        return;
+      }
+
+      fs.ensureDirSync(cachePath);
+
+      return buildFunction(cachePath);
+    })
+    .then(() => cachePath);
+}
+
 class CJSTransform extends Plugin {
   constructor(input, projectRoot, options) {
     super([input], {
@@ -16,7 +38,7 @@ class CJSTransform extends Plugin {
     this.projectRoot = projectRoot;
     this.options = options;
     this.hasBuilt = false;
-    this.cacheKey = this.calculateCacheKey();
+    this.cacheKey = path.join('cjs-transform', this.calculateCacheKey());
   }
 
   build() {
@@ -24,40 +46,20 @@ class CJSTransform extends Plugin {
       return;
     }
 
-    return this.calculateCacheDirectory()
-      .then(cachePath => {
-        if (fs.existsSync(cachePath)) {
-          return;
-        }
+    return ensureCachePopulated(this.cacheKey, cachePath => {
+      let promises = [];
 
-        fs.ensureDirSync(cachePath);
+      for (let relativePath in this.options) {
+        const relativePathOptions = this.options[relativePath];
 
-        let promises = [];
+        let promise = this.processFile(cachePath, relativePath, relativePathOptions.as);
+        promises.push(promise);
+      }
 
-        for (let relativePath in this.options) {
-          const relativePathOptions = this.options[relativePath];
-
-          let promise = this.processFile(relativePath, relativePathOptions.as);
-          promises.push(promise);
-        }
-
-        return Promise.all(promises);
-      })
-      .then(() => {
-        fs.copySync(this.cachePath, this.outputPath);
-        this.hasBuilt = true;
-      });
-  }
-
-  calculateCacheDirectory() {
-    const username = require('username');
-    const tmpdir = require('os').tmpdir();
-
-    return username().then(username => {
-      let cachePath = path.join(tmpdir, username, 'cjs-transform', this.cacheKey);
-      this.cachePath = cachePath;
-
-      return cachePath;
+      return Promise.all(promises);
+    }).then(cachePath => {
+      fs.copySync(cachePath, this.outputPath);
+      this.hasBuilt = true;
     });
   }
 
@@ -86,7 +88,7 @@ class CJSTransform extends Plugin {
       .digest('hex');
   }
 
-  processFile(relativePath, moduleName) {
+  processFile(cachePath, relativePath, moduleName) {
     const rollup = require('rollup');
     const resolve = require('rollup-plugin-node-resolve');
     const commonjs = require('rollup-plugin-commonjs');
@@ -104,7 +106,7 @@ class CJSTransform extends Plugin {
     };
 
     let outputOptions = {
-      file: path.posix.join(this.cachePath, relativePath),
+      file: path.posix.join(cachePath, relativePath),
       format: 'amd',
       amd: { id: moduleName },
       exports: 'named',
