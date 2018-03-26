@@ -10,7 +10,9 @@ module.exports = {
     let project = this.project;
     let debugTree = BroccoliDebug.buildDebugCallback('ember-cli-cjs-transform');
 
-    return {
+    let transforms = this.eachAddonInvoke('importTransforms');
+    
+    return Object.assign.apply(Object, [{
       cjs: {
         transform(tree, options) {
           let input = debugTree(tree, 'input');
@@ -44,6 +46,6 @@ module.exports = {
           return options;
         },
       },
-    };
+    }].concat(transforms));
   },
 };
