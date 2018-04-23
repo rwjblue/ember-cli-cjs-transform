@@ -97,6 +97,7 @@ class CJSTransform extends Plugin {
       input: path.posix.join(this.projectRoot, relativePath),
       plugins: [
         resolve({
+          browser: true,
           customResolveOptions: {
             moduleDirectory: path.join(this.projectRoot, 'node_modules'),
           },
