@@ -23,7 +23,7 @@
     "fs-extra": "^5.0.0",
     "hash-for-dep": "^1.2.3",
     "pkg-dir": "^2.0.0",
-    "rollup": "^0.57.1",
+    "rollup": "^0.58.1",
     "rollup-plugin-commonjs": "^9.1.0",
     "rollup-plugin-node-resolve": "^3.3.0",
     "username": "^3.0.0"
