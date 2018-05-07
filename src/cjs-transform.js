@@ -92,8 +92,8 @@ class CJSTransform extends Plugin {
     const rollup = require('rollup');
     const resolve = require('rollup-plugin-node-resolve');
     const commonjs = require('rollup-plugin-commonjs');
-    const json = require('rollup-plugin-json');
-    const node = require('rollup-plugin-node-builtins');
+
+    let plugins = this.options[relativePath].plugins || [];
 
     let inputOptions = {
       input: path.posix.join(this.projectRoot, relativePath),
@@ -105,9 +105,7 @@ class CJSTransform extends Plugin {
           },
         }),
         commonjs(),
-        node(),
-        json(),
-      ],
+      ].concat(plugins),
     };
 
     let outputOptions = {
