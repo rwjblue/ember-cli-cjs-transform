@@ -25,6 +25,8 @@
     "pkg-dir": "^2.0.0",
     "rollup": "^0.58.1",
     "rollup-plugin-commonjs": "^9.1.0",
+    "rollup-plugin-json": "^2.3.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^3.3.0",
     "username": "^3.0.0"
   },
