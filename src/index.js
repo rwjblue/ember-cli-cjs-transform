@@ -7,7 +7,7 @@ module.exports = {
     const BroccoliDebug = require('broccoli-debug');
     const CJSTransform = require('./cjs-transform');
 
-    let project = this.project;
+    let parent = this.parent;
     let debugTree = BroccoliDebug.buildDebugCallback('ember-cli-cjs-transform');
 
     return {
@@ -15,7 +15,7 @@ module.exports = {
         transform(tree, options) {
           let input = debugTree(tree, 'input');
 
-          let processed = new CJSTransform(input, project.root, options);
+          let processed = new CJSTransform(input, parent.root, options);
 
           return debugTree(processed, 'output');
         },

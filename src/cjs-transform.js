@@ -4,6 +4,9 @@ const Plugin = require('broccoli-plugin');
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
+const resolveSync = require('resolve').sync;
+
+const NODE_MODULES = 'node_modules/';
 
 function ensureCachePopulated(cacheKey, buildFunction) {
   const username = require('username');
@@ -28,14 +31,19 @@ function ensureCachePopulated(cacheKey, buildFunction) {
 }
 
 class CJSTransform extends Plugin {
-  constructor(input, projectRoot, options) {
+  /**
+   * @param {string} input - absolute path to source directory
+   * @param {string} parentRoot - absolute path to parent (project or addon) root. Used as the reference directory to find NPM packages via node's `require` algorithm
+   * @param {Object} options - map of relative file paths to rollup options, i.e. { "node_modules/foo/bar.js": { as: 'foo' } }
+   */
+  constructor(input, parentRoot, options) {
     super([input], {
       name: 'CJSTransform',
       annotation: 'CJS Transform',
       persistentOutput: true,
     });
 
-    this.projectRoot = projectRoot;
+    this.parentRoot = parentRoot;
     this.options = options;
     this.hasBuilt = false;
     this.cacheKey = path.join('cjs-transform', this.calculateCacheKey());
@@ -75,7 +83,9 @@ class CJSTransform extends Plugin {
     ];
 
     for (let relativePath in this.options) {
-      let fullPath = path.join(this.projectRoot, relativePath);
+      let fullPath = resolveSync(relativePath.slice(NODE_MODULES.length), {
+        basedir: this.parentRoot,
+      });
       let packageDir = pkgDir.sync(fullPath);
       let hash = hashForDep(packageDir);
 
@@ -93,16 +103,23 @@ class CJSTransform extends Plugin {
     const resolve = require('rollup-plugin-node-resolve');
     const commonjs = require('rollup-plugin-commonjs');
 
+    if (!relativePath.startsWith(NODE_MODULES)) {
+      throw new Error(`The "cjs" transform works only with NPM packages.
+You tried to use it with "${relativePath}". Make sure your imported file path
+begins with "node_modules/".`);
+    }
+
+    const fullPath = resolveSync(relativePath.slice(NODE_MODULES.length), {
+      basedir: this.parentRoot,
+    });
+
     let plugins = this.options[relativePath].plugins || [];
 
     let inputOptions = {
-      input: path.posix.join(this.projectRoot, relativePath),
+      input: fullPath,
       plugins: [
         resolve({
           browser: true,
-          customResolveOptions: {
-            moduleDirectory: path.join(this.projectRoot, 'node_modules'),
-          },
         }),
         commonjs(),
       ].concat(plugins),
