@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const co = require('co');
 const BroccoliTestHelper = require('broccoli-test-helper');
 const createBuilder = BroccoliTestHelper.createBuilder;
@@ -247,6 +248,50 @@ describe('ember-cli-cjs-transform', function() {
         results = evaluateModules(output.path('node_modules/foo/index.js'));
         assert.equal(results.name, 'bar');
         assert.deepEqual(results.exports, { default: 'huzzah' });
+      })
+    );
+
+    it(
+      'finds node_modules using the same algorithm as `require`',
+      co.wrap(function*(assert) {
+        let commonContents = {
+          node_modules: {
+            foo: {
+              'package.json': '{ "name": "foo", "version": "1.0.0" }',
+              'index.js': 'module.exports = "derp";',
+            },
+          },
+          project: {
+            node_modules: {
+              baz: {
+                'package.json': '{ "name": "baz", "version": "1.0.0" }',
+                'index.js': 'module.exports = "moop";',
+              },
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        // Project directory has a sibling node_modules directory, like in a
+        // yarn workspace.
+        let projectPath = path.join(projectRoot.path(), 'project');
+        let subject = new CJSTransform(input.path(), projectPath, {
+          'node_modules/foo/index.js': { as: 'bar' },
+          'node_modules/baz/index.js': { as: 'quux' },
+        });
+
+        output = createBuilder(subject);
+
+        yield output.build();
+
+        let results = evaluateModules(output.path('node_modules/foo/index.js'));
+        assert.equal(results.name, 'bar');
+        assert.deepEqual(results.exports, { default: 'derp' });
+
+        results = evaluateModules(output.path('node_modules/baz/index.js'));
+        assert.equal(results.name, 'quux');
+        assert.deepEqual(results.exports, { default: 'moop' });
       })
     );
   });
