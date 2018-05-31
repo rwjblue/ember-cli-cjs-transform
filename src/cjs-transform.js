@@ -33,17 +33,17 @@ function ensureCachePopulated(cacheKey, buildFunction) {
 class CJSTransform extends Plugin {
   /**
    * @param {string} input - absolute path to source directory
-   * @param {string} projectRoot - absolute path to project root. Used as the reference directory to find NPM packages via node's `require` algorithm
+   * @param {string} parentRoot - absolute path to parent (project or addon) root. Used as the reference directory to find NPM packages via node's `require` algorithm
    * @param {Object} options - map of relative file paths to rollup options, i.e. { "node_modules/foo/bar.js": { as: 'foo' } }
    */
-  constructor(input, projectRoot, options) {
+  constructor(input, parentRoot, options) {
     super([input], {
       name: 'CJSTransform',
       annotation: 'CJS Transform',
       persistentOutput: true,
     });
 
-    this.projectRoot = projectRoot;
+    this.parentRoot = parentRoot;
     this.options = options;
     this.hasBuilt = false;
     this.cacheKey = path.join('cjs-transform', this.calculateCacheKey());
@@ -84,7 +84,7 @@ class CJSTransform extends Plugin {
 
     for (let relativePath in this.options) {
       let fullPath = resolveSync(relativePath.slice(NODE_MODULES.length), {
-        basedir: this.projectRoot,
+        basedir: this.parentRoot,
       });
       let packageDir = pkgDir.sync(fullPath);
       let hash = hashForDep(packageDir);
@@ -110,7 +110,7 @@ begins with "node_modules/".`);
     }
 
     const fullPath = resolveSync(relativePath.slice(NODE_MODULES.length), {
-      basedir: this.projectRoot,
+      basedir: this.parentRoot,
     });
 
     let inputOptions = {
