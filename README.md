@@ -50,7 +50,7 @@ There may be cases where you need additional rollup plugins in order to import y
 var path = require('path');
 ```
 
-For this, you may want to import the rollup plugin `rollup-plugin-node-builtins`. In order to do this, just include the plugin in your `package.json` and use the following syntax in your `ember-cli-build.js` or `index.js`:
+For this, you may want to import the rollup plugin `rollup-plugin-node-builtins`. In order to do this, include the plugin in your `package.json` and use the following syntax in your `ember-cli-build.js` or `index.js`:
 
 ```js
 const nodeBuiltins = require('rollup-plugin-node-builtins');
@@ -62,7 +62,22 @@ app.import('node_modules/some-name/index.js', {
 });
 ```
 
-You can include multiple rollup plugins into the array and pass in options via the arguments to your plugin creation function.
+You can include multiple rollup plugins in the array and pass in options via the arguments to your plugin creation function.
+
+```js
+app.import('node_modules/some-name/index.js', {
+  using: [
+    {
+      transformation: 'cjs',
+      as: 'some-name',
+      plugins: [
+        plugin1(),
+        plugin2({ option1: "value" })
+      ]
+    }
+  ]
+});
+```
 
 ## Contributing
 
