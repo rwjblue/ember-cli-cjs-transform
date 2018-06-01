@@ -113,6 +113,8 @@ begins with "node_modules/".`);
       basedir: this.parentRoot,
     });
 
+    let plugins = this.options[relativePath].plugins || [];
+
     let inputOptions = {
       input: fullPath,
       plugins: [
@@ -120,7 +122,7 @@ begins with "node_modules/".`);
           browser: true,
         }),
         commonjs(),
-      ],
+      ].concat(plugins),
     };
 
     let outputOptions = {

@@ -8,6 +8,7 @@ const createBuilder = BroccoliTestHelper.createBuilder;
 const createTempDir = BroccoliTestHelper.createTempDir;
 
 const CJSTransform = require('../src/cjs-transform');
+const dataToEsm = require('rollup-pluginutils').dataToEsm;
 
 const describe = QUnit.module;
 const it = QUnit.test;
@@ -168,6 +169,43 @@ describe('ember-cli-cjs-transform', function() {
         yield output.build();
 
         assert.deepEqual(output.changes(), {});
+      })
+    );
+
+    it(
+      'can include a plugin',
+      co.wrap(function*(assert) {
+        let contents = {
+          node_modules: {
+            foo: {
+              'package.json': '{ "name": "foo", "version": "1.0.0" }',
+              'index.js': 'module.exports = "this should be replaced";',
+            },
+          },
+        };
+        projectRoot.write(contents);
+        input.write(contents);
+
+        let subject = new CJSTransform(input.path(), projectRoot.path(), {
+          'node_modules/foo/index.js': {
+            as: 'bar',
+            plugins: [
+              {
+                name: 'test plugin',
+                transform() {
+                  return dataToEsm('whatever');
+                },
+              },
+            ],
+          },
+        });
+
+        output = createBuilder(subject);
+        yield output.build();
+
+        let results = evaluateModules(output.path('node_modules/foo/index.js'));
+        assert.equal(results.name, 'bar');
+        assert.deepEqual(results.exports, { default: 'whatever' });
       })
     );
 

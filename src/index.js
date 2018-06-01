@@ -39,6 +39,7 @@ module.exports = {
 
           options[assetPath] = {
             as: entry.as,
+            plugins: entry.plugins,
           };
 
           return options;
