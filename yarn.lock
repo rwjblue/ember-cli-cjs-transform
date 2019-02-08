@@ -2068,22 +2068,16 @@ has@^1.0.1, has@^1.0.3:
     function-bind "^1.1.1"
 
 hash-for-dep@^1.0.2, hash-for-dep@^1.2.3:
-  version "1.2.3"
-  resolved "https://registry.yarnpkg.com/hash-for-dep/-/hash-for-dep-1.2.3.tgz#5ec69fca32c23523972d52acb5bb65ffc3664cab"
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/hash-for-dep/-/hash-for-dep-1.3.1.tgz#b33d33aea8a428de5045d3e7ee0ad86298960c53"
+  integrity sha512-+EtZxGPLzo4MxEOT3VALnWcfGx/LGuYJE2HqKAPJfDXju0KHZgSNluUyExtKvXeMlF41Vwyv4qbboUI3RqRoBA==
   dependencies:
     broccoli-kitchen-sink-helpers "^0.3.1"
     heimdalljs "^0.2.3"
     heimdalljs-logger "^0.1.7"
     resolve "^1.4.0"
 
-heimdalljs-logger@^0.1.7:
-  version "0.1.9"
-  resolved "https://registry.yarnpkg.com/heimdalljs-logger/-/heimdalljs-logger-0.1.9.tgz#d76ada4e45b7bb6f786fc9c010a68eb2e2faf176"
-  dependencies:
-    debug "^2.2.0"
-    heimdalljs "^0.2.0"
-
-heimdalljs-logger@^0.1.9:
+heimdalljs-logger@^0.1.7, heimdalljs-logger@^0.1.9:
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/heimdalljs-logger/-/heimdalljs-logger-0.1.10.tgz#90cad58aabb1590a3c7e640ddc6a4cd3a43faaf7"
   integrity sha512-pO++cJbhIufVI/fmB/u2Yty3KJD0TqNPecehFae0/eps0hkZ3b4Zc/PezUMOpYuHFQbA7FxHZxa305EhmjLj4g==
@@ -2091,13 +2085,7 @@ heimdalljs-logger@^0.1.9:
     debug "^2.2.0"
     heimdalljs "^0.2.6"
 
-heimdalljs@^0.2.0, heimdalljs@^0.2.1, heimdalljs@^0.2.3:
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/heimdalljs/-/heimdalljs-0.2.5.tgz#6aa54308eee793b642cff9cf94781445f37730ac"
-  dependencies:
-    rsvp "~3.2.1"
-
-heimdalljs@^0.2.5, heimdalljs@^0.2.6:
+heimdalljs@^0.2.0, heimdalljs@^0.2.1, heimdalljs@^0.2.3, heimdalljs@^0.2.5, heimdalljs@^0.2.6:
   version "0.2.6"
   resolved "https://registry.yarnpkg.com/heimdalljs/-/heimdalljs-0.2.6.tgz#b0eebabc412813aeb9542f9cc622cb58dbdcd9fe"
   integrity sha512-o9bd30+5vLBvBtzCPwwGqpry2+n0Hi6H1+qwt6y+0kwRHGGF8TFIhJPmnuM0xO97zaKrDZMwO/V56fAnn8m/tA==
