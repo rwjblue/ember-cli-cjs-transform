@@ -1,41 +1,15 @@
 'use strict';
 
 const Plugin = require('broccoli-plugin');
-const fs = require('fs-extra');
 const path = require('path');
-const crypto = require('crypto');
 const resolveSync = require('resolve').sync;
+const Cache = require('sync-disk-cache');
+const crypto = require('crypto');
+const fs = require('fs-extra');
 
 const NODE_MODULES = 'node_modules/';
 
-function ensureCachePopulated(cacheKey, buildFunction) {
-  const username = require('username');
-  const tmpdir = require('os').tmpdir();
-
-  let cachePath;
-
-  return username()
-    .then(username => {
-      cachePath = path.join(tmpdir, username, cacheKey);
-
-      if (fs.existsSync(cachePath)) {
-        // cache already exists, do nothing...
-        return;
-      }
-
-      fs.ensureDirSync(cachePath);
-
-      return buildFunction(cachePath);
-    })
-    .then(() => cachePath);
-}
-
-class CJSTransform extends Plugin {
-  /**
-   * @param {string} input - absolute path to source directory
-   * @param {string} parentRoot - absolute path to parent (project or addon) root. Used as the reference directory to find NPM packages via node's `require` algorithm
-   * @param {Object} options - map of relative file paths to rollup options, i.e. { "node_modules/foo/bar.js": { as: 'foo' } }
-   */
+module.exports = class CJSTransform extends Plugin {
   constructor(input, parentRoot, options) {
     super([input], {
       name: 'CJSTransform',
@@ -46,7 +20,7 @@ class CJSTransform extends Plugin {
     this.parentRoot = parentRoot;
     this.options = options;
     this.hasBuilt = false;
-    this.cacheKey = path.join('cjs-transform', this.calculateCacheKey());
+    this.cache = new Cache(this.calculateCacheKey());
   }
 
   build() {
@@ -54,21 +28,21 @@ class CJSTransform extends Plugin {
       return;
     }
 
-    return ensureCachePopulated(this.cacheKey, cachePath => {
-      let promises = [];
+    let work = [];
 
-      for (let relativePath in this.options) {
-        const relativePathOptions = this.options[relativePath];
+    for (let relativePath in this.options) {
+      const relativePathOptions = this.options[relativePath];
 
-        let promise = this.processFile(cachePath, relativePath, relativePathOptions.as);
-        promises.push(promise);
-      }
+      work.push(this.processFile(relativePath, relativePathOptions.as));
+    }
 
-      return Promise.all(promises);
-    }).then(cachePath => {
-      fs.copySync(cachePath, this.outputPath);
-      this.hasBuilt = true;
-    });
+    return Promise.all(work)
+      .then(() => (this.hasBuilt = true))
+      .catch(e => {
+        // if something goes wrong, we should purge our output so we can potentially recover on rebuild
+        fs.removeSync(this.outputPath);
+        throw e;
+      });
   }
 
   calculateCacheKey() {
@@ -94,11 +68,23 @@ class CJSTransform extends Plugin {
 
     return crypto
       .createHash('md5')
-      .update(JSON.stringify(hashes), 'utf8')
+      .update(hashes.join(0x00), 'utf8')
       .digest('hex');
   }
 
-  processFile(cachePath, relativePath, moduleName) {
+  processFile(relativePath, moduleName) {
+    const key = relativePath + 0x00 + moduleName;
+    const entry = this.cache.get(key);
+    const outputFilePath = path.posix.join(this.outputPath, relativePath);
+
+    fs.ensureDirSync(path.dirname(outputFilePath));
+
+    if (entry.isCached) {
+      //  populate from cache
+      fs.writeFileSync(outputFilePath, entry.value);
+      return;
+    }
+
     const rollup = require('rollup');
     const resolve = require('rollup-plugin-node-resolve');
     const commonjs = require('rollup-plugin-commonjs');
@@ -126,14 +112,19 @@ begins with "node_modules/".`);
     };
 
     let outputOptions = {
-      file: path.posix.join(cachePath, relativePath),
+      file: outputFilePath,
       format: 'amd',
       amd: { id: moduleName },
       exports: 'named',
     };
 
-    return rollup.rollup(inputOptions).then(bundle => bundle.write(outputOptions));
+    return rollup.rollup(inputOptions).then(bundle => {
+      return bundle.generate(outputOptions).then(result => {
+        // populate cache
+        let code = result.code;
+        this.cache.set(key, code);
+        fs.writeFileSync(outputFilePath, code);
+      });
+    });
   }
-}
-
-module.exports = CJSTransform;
+};

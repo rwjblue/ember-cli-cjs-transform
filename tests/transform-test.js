@@ -108,6 +108,57 @@ describe('ember-cli-cjs-transform', function() {
     );
 
     it(
+      'recovers even if files within the cache are removed',
+      co.wrap(function*(assert) {
+        let commonContents = {
+          node_modules: {
+            foo: {
+              'package.json': '{ "name": "foo", "version": "1.0.0" }',
+              'index.js': 'module.exports = "derp";',
+            },
+          },
+        };
+        projectRoot.write(commonContents);
+        input.write(commonContents);
+
+        {
+          let subject = new CJSTransform(input.path(), projectRoot.path(), {
+            'node_modules/foo/index.js': { as: 'bar' },
+          });
+
+          // first plugin build
+          let output = createBuilder(subject);
+
+          yield output.build();
+
+          let results = evaluateModules(output.path('node_modules/foo/index.js'));
+          assert.equal(results.name, 'bar');
+          assert.deepEqual(results.exports, { default: 'derp' });
+
+          fs.readdirSync(subject.cache.root).forEach(x => {
+            fs.unlinkSync(`${subject.cache.root}/${x}`);
+          });
+        }
+
+        // screw up cache
+        {
+          let subject = new CJSTransform(input.path(), projectRoot.path(), {
+            'node_modules/foo/index.js': { as: 'bar' },
+          });
+
+          // second plugin build (should recover correctly);
+          let output = createBuilder(subject);
+
+          yield output.build();
+
+          let results = evaluateModules(output.path('node_modules/foo/index.js'));
+          assert.equal(results.name, 'bar');
+          assert.deepEqual(results.exports, { default: 'derp' });
+        }
+      })
+    );
+
+    it(
       'can rollup CJS requires',
       co.wrap(function*(assert) {
         let commonContents = {

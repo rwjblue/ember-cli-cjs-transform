@@ -27,7 +27,8 @@
     "rollup": "^0.59.0",
     "rollup-plugin-commonjs": "^9.1.0",
     "rollup-plugin-node-resolve": "^3.3.0",
-    "username": "^3.0.0"
+    "username": "^3.0.0",
+    "sync-disk-cache": "^1.3.3"
   },
   "devDependencies": {
     "broccoli-test-helper": "^1.2.0",
