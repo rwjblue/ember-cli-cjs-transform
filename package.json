@@ -20,7 +20,7 @@
     "broccoli-debug": "^0.6.4",
     "broccoli-plugin": "^2.0.0",
     "ember-cli-babel": "^7.1.2",
-    "fs-extra": "^7.0.1",
+    "fs-extra": "^8.0.1",
     "hash-for-dep": "^1.2.3",
     "pkg-dir": "^3.0.0",
     "resolve": "^1.7.1",
