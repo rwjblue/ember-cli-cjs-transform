@@ -18,7 +18,7 @@ For example, add the following to import `some-name`'s `index.js` into your buil
 ```js
 app.import('node_modules/some-name/index.js', {
   using: [
-    { transformation: 'cjs', as: 'some-name'}
+    { transformation: 'cjs', as: 'some-name' }
   ]
 });
 ```
