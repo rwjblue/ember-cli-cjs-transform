@@ -22,7 +22,7 @@
     "ember-cli-babel": "^7.1.2",
     "fs-extra": "^8.0.1",
     "hash-for-dep": "^1.2.3",
-    "pkg-dir": "^3.0.0",
+    "pkg-dir": "^4.2.0",
     "resolve": "^1.7.1",
     "rollup": "^1.1.2",
     "rollup-plugin-commonjs": "^10.0.0",
